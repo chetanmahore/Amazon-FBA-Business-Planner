@@ -20,28 +20,23 @@ interface SummaryCardsProps {
 export const SummaryCards: React.FC<SummaryCardsProps> = ({ products }) => {
   // --- Calculations ---
 
-  // 1. Total Investment (Inventory Value) -> Based on Units Required
+  // 1. Total Investment (Inventory Value)
   const totalInventoryValue = products.reduce((acc, p) => acc + (p.landedCogs * p.unitsRequired), 0);
 
-  // 2. Total Revenue (Potential from Stock) -> Based on Units Required
+  // 2. Total Revenue (Potential from Stock)
   const totalInventoryRevenue = products.reduce((acc, p) => acc + (p.sellingPriceInr * p.unitsRequired), 0);
 
-  // 3. Total Gross Profit (Potential from Stock) -> Based on Units Required
-  // GP = Selling Price - Landed Cost
+  // 3. Total Gross Profit (Potential from Stock)
   const totalInventoryGrossProfit = products.reduce((acc, p) => acc + ((p.sellingPriceInr - p.landedCogs) * p.unitsRequired), 0);
   const inventoryGrossProfitMargin = totalInventoryRevenue > 0 ? (totalInventoryGrossProfit / totalInventoryRevenue) * 100 : 0;
 
-  // 4. Total Net Profit (Potential from Stock) -> Based on Units Required
-  // Uses the Real Net Profit per unit (which accounts for overheads/ads based on current run rate)
+  // 4. Total Net Profit (Potential from Stock)
   const totalInventoryNetProfit = products.reduce((acc, p) => acc + (p.realNetProfit * p.unitsRequired), 0);
   const inventoryNetProfitMargin = totalInventoryRevenue > 0 ? (totalInventoryNetProfit / totalInventoryRevenue) * 100 : 0;
 
   // --- Efficiency Metrics (Time-based / Monthly) ---
 
-  // Monthly Revenue (for Contribution calculation context)
   const totalMonthlyRevenue = products.reduce((acc, p) => acc + p.monthlyRevenue, 0);
-
-  // Monthly COGS (for Days of Inventory)
   const totalMonthlyCOGS = products.reduce((acc, p) => acc + (p.landedCogs * p.estMonthlySalesUnits), 0);
 
   // Days of Inventory
@@ -62,121 +57,140 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ products }) => {
   const monthsToPayback = totalMonthlyTakeHome > 0 ? totalInventoryValue / totalMonthlyTakeHome : 0;
 
 
-  // --- Card Definitions ---
-
-  const investmentCards = [
-    {
-      title: 'Total Investment',
-      value: formatCurrency(totalInventoryValue),
-      subtext: 'Cost of Inventory',
-      icon: <Wallet className="w-4 h-4 text-emerald-600" />,
-      color: 'bg-emerald-50 border-emerald-200',
-    },
-    {
-      title: 'Total Revenue',
-      value: formatCurrency(totalInventoryRevenue),
-      subtext: 'Potential Sales Value',
-      icon: <DollarSign className="w-4 h-4 text-blue-600" />,
-      color: 'bg-blue-50 border-blue-200',
-    },
-    {
-      title: 'Total Gross Profit',
-      value: formatCurrency(totalInventoryGrossProfit),
-      subtext: 'Potential GP (Stock)',
-      icon: <BarChart3 className="w-4 h-4 text-teal-600" />,
-      color: 'bg-teal-50 border-teal-200',
-    },
-    {
-      title: 'Total Gross Profit %',
-      value: `${inventoryGrossProfitMargin.toFixed(0)}%`,
-      subtext: 'GP Margin',
-      icon: <PieChart className="w-4 h-4 text-violet-600" />,
-      color: 'bg-violet-50 border-violet-200',
-    },
-    {
-      title: 'Total Net Profit',
-      value: formatCurrency(totalInventoryNetProfit),
-      subtext: 'Potential Take-Home',
-      icon: <TrendingUp className="w-4 h-4 text-green-600" />,
-      color: 'bg-green-50 border-green-200',
-    },
-    {
-      title: 'Total Net Profit %',
-      value: `${inventoryNetProfitMargin.toFixed(0)}%`,
-      subtext: 'Net Margin',
-      icon: <Activity className="w-4 h-4 text-orange-600" />,
-      color: 'bg-orange-50 border-orange-200',
-    },
-  ];
-
-  const efficiencyCards = [
-    {
-      title: 'Days of Inventory',
-      value: `${daysOfInventory.toFixed(0)} Days`,
-      subtext: 'Stock Duration',
-      icon: <Clock className="w-4 h-4 text-indigo-600" />,
-      color: 'bg-indigo-50 border-indigo-200',
-    },
-    {
-      title: 'Contribution %',
-      value: `${contributionMarginPercent.toFixed(0)}%`,
-      subtext: 'After Amazon & Taxes',
-      icon: <PackageCheck className="w-4 h-4 text-rose-600" />,
-      color: 'bg-rose-50 border-rose-200',
-    },
-    {
-      title: 'Inv. Recovery',
-      value: monthsToPayback === Infinity || monthsToPayback <= 0 ? 'N/A' : `${monthsToPayback.toFixed(0)} Months`,
-      subtext: 'Payback Period',
-      icon: <Hourglass className="w-4 h-4 text-amber-600" />,
-      color: 'bg-amber-50 border-amber-200',
-    },
-  ];
+  // --- Card Helper ---
+  const MetricCard = ({ 
+    title, 
+    value, 
+    subtext, 
+    icon, 
+    colorClass, 
+    iconBgClass,
+    progressBarValue = null,
+    progressBarColor = "" 
+  }: any) => (
+    <div className={`p-5 rounded-2xl border bg-white shadow-sm flex flex-col justify-between transition-all hover:shadow-md hover:-translate-y-0.5 ${colorClass}`}>
+      <div className="flex justify-between items-start mb-3">
+        <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{title}</h3>
+        <div className={`p-2 rounded-xl ${iconBgClass}`}>
+          {icon}
+        </div>
+      </div>
+      <div>
+        <div className="text-2xl font-bold text-gray-900 tracking-tight" title={value}>{value}</div>
+        <div className="text-[11px] font-medium text-gray-500 mt-1">{subtext}</div>
+        
+        {progressBarValue !== null && (
+          <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className={`h-1.5 rounded-full ${progressBarColor}`} 
+              style={{ width: `${Math.min(100, Math.max(0, progressBarValue))}%` }}
+            ></div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="flex flex-col gap-6 mb-8">
+    <div className="flex flex-col gap-8 mb-8">
       
-      {/* Row 1: Investment Outlook (Stock Based) */}
+      {/* Row 1: Investment Outlook */}
       <div>
-        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1 flex items-center gap-2">
-          Capital & Investment Potential <span className="text-[10px] bg-gray-200 px-1.5 py-0.5 rounded text-gray-500 normal-case">Based on current stock</span>
+        <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+           <Wallet className="w-4 h-4 text-gray-500" /> Investment Outlook
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-          {investmentCards.map((card, idx) => (
-            <div key={idx} className={`p-4 rounded-xl border ${card.color} shadow-sm flex flex-col justify-between transition-all hover:shadow-md min-h-[110px]`}>
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wide leading-tight">{card.title}</h3>
-                <div className="p-1.5 bg-white rounded-lg bg-opacity-80 shadow-sm">
-                  {card.icon}
-                </div>
-              </div>
-              <div>
-                <div className="text-xl font-bold text-gray-900 truncate" title={card.value}>{card.value}</div>
-                <div className="text-[10px] text-gray-500 mt-1 truncate">{card.subtext}</div>
-              </div>
-            </div>
-          ))}
+          <MetricCard 
+            title="Total Investment"
+            value={formatCurrency(totalInventoryValue)}
+            subtext="Inventory Cost"
+            icon={<Wallet className="w-4 h-4 text-emerald-600" />}
+            colorClass="border-emerald-100"
+            iconBgClass="bg-emerald-50"
+          />
+          <MetricCard 
+            title="Total Revenue"
+            value={formatCurrency(totalInventoryRevenue)}
+            subtext="Potential Sales"
+            icon={<DollarSign className="w-4 h-4 text-blue-600" />}
+            colorClass="border-blue-100"
+            iconBgClass="bg-blue-50"
+          />
+          <MetricCard 
+            title="Gross Profit"
+            value={formatCurrency(totalInventoryGrossProfit)}
+            subtext="Before Ops"
+            icon={<BarChart3 className="w-4 h-4 text-teal-600" />}
+            colorClass="border-teal-100"
+            iconBgClass="bg-teal-50"
+          />
+          <MetricCard 
+            title="Gross Margin"
+            value={`${inventoryGrossProfitMargin.toFixed(0)}%`}
+            subtext="Target: >40%"
+            icon={<PieChart className="w-4 h-4 text-violet-600" />}
+            colorClass="border-violet-100"
+            iconBgClass="bg-violet-50"
+            progressBarValue={inventoryGrossProfitMargin}
+            progressBarColor="bg-violet-500"
+          />
+          <MetricCard 
+            title="Net Profit"
+            value={formatCurrency(totalInventoryNetProfit)}
+            subtext="Take-Home"
+            icon={<TrendingUp className="w-4 h-4 text-green-600" />}
+            colorClass="border-green-100"
+            iconBgClass="bg-green-50"
+          />
+          <MetricCard 
+            title="Net Margin"
+            value={`${inventoryNetProfitMargin.toFixed(0)}%`}
+            subtext="Target: >20%"
+            icon={<Activity className="w-4 h-4 text-orange-600" />}
+            colorClass="border-orange-100"
+            iconBgClass="bg-orange-50"
+            progressBarValue={inventoryNetProfitMargin}
+            progressBarColor="bg-orange-500"
+          />
         </div>
       </div>
 
-      {/* Row 2: Efficiency & Speed */}
+      {/* Row 2: Capital Efficiency */}
       <div>
-        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">Capital Efficiency & Cash Flow</h3>
+        <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+           <Clock className="w-4 h-4 text-gray-500" /> Capital Efficiency
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {efficiencyCards.map((card, idx) => (
-            <div key={idx} className={`p-4 rounded-xl border ${card.color} shadow-sm flex flex-col justify-between transition-all hover:shadow-md`}>
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide">{card.title}</h3>
-                <div className="p-2 bg-white rounded-lg bg-opacity-80 shadow-sm">
-                  {card.icon}
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-gray-900">{card.value}</div>
-                <div className="text-xs text-gray-500 mt-1">{card.subtext}</div>
-              </div>
-            </div>
-          ))}
+          <MetricCard 
+            title="Days of Inventory"
+            value={`${daysOfInventory.toFixed(0)} Days`}
+            subtext="Turnover Speed"
+            icon={<Clock className="w-4 h-4 text-indigo-600" />}
+            colorClass="border-indigo-100"
+            iconBgClass="bg-indigo-50"
+            progressBarValue={(365 - daysOfInventory) / 365 * 100} // Inverse visual: less is better usually, but here just showing capacity
+            progressBarColor="bg-indigo-500"
+          />
+          <MetricCard 
+            title="Contribution Margin"
+            value={`${contributionMarginPercent.toFixed(0)}%`}
+            subtext="After Amazon Fees & COGS"
+            icon={<PackageCheck className="w-4 h-4 text-rose-600" />}
+            colorClass="border-rose-100"
+            iconBgClass="bg-rose-50"
+            progressBarValue={contributionMarginPercent}
+            progressBarColor="bg-rose-500"
+          />
+          <MetricCard 
+            title="Investment Recovery"
+            value={monthsToPayback === Infinity || monthsToPayback <= 0 ? 'N/A' : `${monthsToPayback.toFixed(0)} Months`}
+            subtext="To break even on stock"
+            icon={<Hourglass className="w-4 h-4 text-amber-600" />}
+            colorClass="border-amber-100"
+            iconBgClass="bg-amber-50"
+            progressBarValue={monthsToPayback > 0 ? (12 - monthsToPayback)/12 * 100 : 0} 
+            progressBarColor="bg-amber-500"
+          />
         </div>
       </div>
 

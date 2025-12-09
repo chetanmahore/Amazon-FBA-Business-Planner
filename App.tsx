@@ -61,6 +61,30 @@ const App: React.FC = () => {
     setProductInputs(prev => prev.filter(p => p.id !== id));
   };
 
+  const handleMoveUp = (id: string) => {
+    setProductInputs(prev => {
+      const index = prev.findIndex(p => p.id === id);
+      if (index <= 0) return prev; // Already at top or not found
+      
+      const newArr = [...prev];
+      // Swap with previous element
+      [newArr[index - 1], newArr[index]] = [newArr[index], newArr[index - 1]];
+      return newArr;
+    });
+  };
+
+  const handleMoveDown = (id: string) => {
+    setProductInputs(prev => {
+      const index = prev.findIndex(p => p.id === id);
+      if (index === -1 || index >= prev.length - 1) return prev; // Already at bottom or not found
+      
+      const newArr = [...prev];
+      // Swap with next element
+      [newArr[index], newArr[index + 1]] = [newArr[index + 1], newArr[index]];
+      return newArr;
+    });
+  };
+
   const handleReset = () => {
     // Reset immediately to defaults
     // The useEffect will catch this change and update localStorage automatically
@@ -116,6 +140,8 @@ const App: React.FC = () => {
             onUpdate={handleUpdate} 
             onDelete={handleDelete}
             onAdd={handleAddProduct}
+            onMoveUp={handleMoveUp}
+            onMoveDown={handleMoveDown}
         />
 
         <div className="mt-8 text-center text-xs text-gray-400">
